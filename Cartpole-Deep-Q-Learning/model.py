@@ -4,7 +4,7 @@ import torch.nn as nn
 class QNetwork(nn.Module):
     def __init__(self, input_dim, output_dim, hidden_dim) -> None:
         """DQN Network
-
+        输入是一个4维向量, 表示cartpole的状态信息, 输出是2维(left/right)
         Args:
             input_dim (int): `state` dimension.
                 `state` is 2-D tensor of shape (n, input_dim)
@@ -15,6 +15,7 @@ class QNetwork(nn.Module):
     
         super(QNetwork, self).__init__()
 
+        # 模型设计: 在输入和输出之间 添加2个隐层
         self.layer1 = torch.nn.Sequential(
             torch.nn.Linear(input_dim, hidden_dim),
 #            torch.nn.BatchNorm1d(hidden_dim),

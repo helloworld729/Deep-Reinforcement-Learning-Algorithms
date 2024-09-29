@@ -1,5 +1,14 @@
 # Project -  Cartpole with Deep Q-Network,  Pytorch
 
+
+### Qlearning 关键点:<br> 
+三元组<br>
+① Q(S_t, A)<br> 
+② Q(S_t+1)<br>
+③ reward<br>
+reward@A + gamma*Q(S_t+1) --> Q(S_t, A)<br>
+Q网络的输入是状态，输出是不同action的价值预估!!!
+
 ### Environment
 
 Solving the environment require an average total reward of over **195** for _Cartpole-v0_  and **475** for _Cartpole-v1_    

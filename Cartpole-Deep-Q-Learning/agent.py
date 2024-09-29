@@ -38,7 +38,7 @@ class Agent(object):
 
         #  ReplayMemory: trajectory is saved here
         self.replay_memory = ReplayMemory(10000)
-        
+
 
     def get_action(self, state, eps, check_eps=True):
         """Returns an action
@@ -83,18 +83,17 @@ class Agent(object):
         rewards = torch.cat(batch.reward)
         next_states = torch.cat(batch.next_state)
         dones = torch.cat(batch.done)
-        
-            
-        # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
-        # columns of actions taken. These are the actions which would've been taken
-        # for each batch state according to newtork q_local (current estimate)
+
+        # 当前状态的价值预估： states dim:[64, 4], output[64, 2], actions:[64, 1],按照dim1进行gather->get action value
         Q_expected = self.q_local(states).gather(1, actions)     
 
-        Q_targets_next = self.q_target(next_states).detach().max(1)[0] 
+        # 下一状态的价值预估：1表示在第1维进行reduce will return maxvalue & maxindex 0 mean get maxvalue
+        Q_targets_next = self.q_target(next_states).detach().max(1)[0]
+        # Q_targets_next = self.q_local(next_states).detach().max(1)[0]
 
+        # 当前状态的价值预估目标 = 采取某个action后获得的直接奖励 + 衰减系数*后续状态的价值预估 hello
         Q_targets = rewards + (gamma * Q_targets_next * (1-dones))
-        
-        #self.q_local.train(mode=True)        
+
         self.optim.zero_grad()
         loss = self.mse_loss(Q_expected, Q_targets.unsqueeze(1))
         loss.backward()

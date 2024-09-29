@@ -26,21 +26,24 @@
 import random
 from collections import namedtuple
 
+# 每个 “状态转换” 包括5元组: 状态 策略 奖励 下一状态 是否结束
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'done'))
 
+# 定义缓存器
 class ReplayMemory(object):
 
     def __init__(self, capacity):
         self.capacity = capacity
         self.memory = []
         self.position = 0   
-       
+
+    # 压入, 如果超出则弹出最旧的
     def push(self, batch):
         self.memory.append(batch)
         if len(self.memory) > self.capacity:
             del self.memory[0]    
        
-
+    # 采样 batch_size 个事务
     def sample(self, batch_size):
         return random.sample(self.memory, batch_size)
 
