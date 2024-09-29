@@ -43,10 +43,11 @@ print('input_dim: ', space_dim, ', output_dim: ', action_dim, ', hidden_dim: ', 
 threshold = env.spec.reward_threshold
 print('threshold: ', threshold)
 
+# 初始化agent->定义价值网络
 agent = Agent(space_dim, action_dim, hidden_dim)
 
 
-# 退火函数
+# 退火函数: 刚开始的时候返回值很大，表示要给足随机性，随之epsiode增大, 要逐渐信任网络
 def epsilon_annealing(i_epsiode, max_episode, min_eps: float):
     ##  if i_epsiode --> max_episode, ret_eps --> min_eps
     ##  if i_epsiode --> 1, ret_eps --> 1
@@ -86,7 +87,7 @@ def run_episode(env, agent, eps):
         if done:
             reward = -1
 
-        # Store the transition in memory
+        # 压栈
         agent.replay_memory.push(
             (FloatTensor([state]),
              action,  # action is already a tensor
@@ -94,6 +95,7 @@ def run_episode(env, agent, eps):
              FloatTensor([observation]),
              FloatTensor([done])))
 
+        # 只有最开始的时候 只积累数据 不学习
         if len(agent.replay_memory) > BATCH_SIZE:
             batch = agent.replay_memory.sample(BATCH_SIZE)
 
@@ -111,12 +113,15 @@ def train():
 
     time_start = time.time()
 
+    prereward, prescore = 0, 0
+
     for i_episode in range(num_episodes):
         eps = epsilon_annealing(i_episode, max_eps_episode, min_eps)
-        score = run_episode(env, agent, eps)
+        #
+        total_reward = run_episode(env, agent, eps)
 
-        scores_deque.append(score)
-        scores_array.append(score)
+        scores_deque.append(total_reward)
+        scores_array.append(total_reward)
 
         avg_score = np.mean(scores_deque)
         avg_scores_array.append(avg_score)
@@ -124,9 +129,13 @@ def train():
         dt = (int)(time.time() - time_start)
 
         if i_episode % print_every == 0 and i_episode > 0:
-            print('Episode: {:5} Score: {:5}  Avg.Score: {:.2f}, eps-greedy: {:5.2f} Time: {:02}:{:02}:{:02}'. \
-                  format(i_episode, score, avg_score, eps, dt // 3600, dt % 3600 // 60, dt % 60))
+            print('Episode: {:5} Score: {:5}({:7})  Avg.Score: {:4.2f}({:7.2f}), eps-greedy: {:5.2f} Time: {:02}:{:02}:{:02}'. \
+                  format(i_episode, total_reward, total_reward-prereward, avg_score, avg_score-prescore,
+                         eps, dt // 3600, dt % 3600 // 60, dt % 60))
+            prereward = total_reward
+            prescore = avg_score
 
+        # 早停策略
         if len(scores_deque) == scores_deque.maxlen:
             ### 195.0: for cartpole-v0 and 475 for v1
             if np.mean(scores_deque) >= threshold:
@@ -134,6 +143,7 @@ def train():
                       format(i_episode, np.mean(scores_deque)))
                 break
 
+        # 网络同步
         if i_episode % TARGET_UPDATE == 0:
             agent.q_target.load_state_dict(agent.q_local.state_dict())
 

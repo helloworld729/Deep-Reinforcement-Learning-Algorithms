@@ -91,14 +91,17 @@ class Agent(object):
         # columns of actions taken. These are the actions which would've been taken
         # for each batch state according to policy_net
         # Use local model to choose an action, and target model to evaluate that action
-        
-        Q_max_action = self.q_local(next_states).detach().max(1)[1].unsqueeze(1)
-        Q_targets_next = self.q_target(next_states).gather(1, Q_max_action).reshape(-1)
 
-        # Compute the expected Q values
+        # Q(St, A_t)
+        Q_expected = self.q_local(states).gather(1, actions)  ## current
+        # argmax(Q(S_t+1))
+        Q_max_action    = self.q_local(next_states).detach().max(1)[1].unsqueeze(1)
+        # Q(S_t+1, A_t+1)
+        Q_targets_next = self.q_target(next_states).gather(1, Q_max_action).reshape(-1)
+        # Q(St)
         Q_targets = rewards + (gamma * Q_targets_next * (1-dones))
 
-        Q_expected = self.q_local(states).gather(1, actions) ## current 
+
         
         #self.q_local.train(mode=True)        
         self.optim.zero_grad()
