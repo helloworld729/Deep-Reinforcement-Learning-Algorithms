@@ -31,6 +31,7 @@ class ValueNetwork(nn.Module):
         return x
 
 
+# 输入state 和 action给出 价值预估
 class QNetwork(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_dim):
         super(QNetwork, self).__init__()
@@ -61,6 +62,7 @@ class QNetwork(nn.Module):
         return x1, x2
 
 
+# 输入state 返回采样的action
 class GaussianPolicy(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_dim, action_space=None):
         super(GaussianPolicy, self).__init__()
@@ -92,11 +94,14 @@ class GaussianPolicy(nn.Module):
         return mean, log_std
 
     def sample(self, state):
+        # mean/log_std 给出 均值和标准差的预估
         mean, log_std = self.forward(state)
         std = log_std.exp()
         normal = Normal(mean, std)
+
         x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
         y_t = torch.tanh(x_t)
+
         action = y_t * self.action_scale + self.action_bias
         log_prob = normal.log_prob(x_t)
         # Enforcing Action Bound
